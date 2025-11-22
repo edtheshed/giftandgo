@@ -1,0 +1,8 @@
+features:
+  person-validation: true
+ipcheck:
+  base-url: http://ip-api.com/json
+  blocked-countries: [ CN, ES, US ]
+  blocked-isps: [ amazon, aws, google, gcp, microsoft, azure ]
+  timeout-ms: 1500
+  enabled: true
