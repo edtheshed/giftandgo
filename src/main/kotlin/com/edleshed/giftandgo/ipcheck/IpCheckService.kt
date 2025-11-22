@@ -10,7 +10,7 @@ data class IpCheckProperties(
     val blockedCountries: Set<String>,
     val blockedIsps: Set<String>,
     val timeoutMs: Long,
-    val enabled: Boolean
+    val enabled: Boolean,
 )
 
 data class IpApiResponse(
@@ -19,14 +19,14 @@ data class IpApiResponse(
     val query: String? = null,
     val country: String? = null,
     val countryCode: String? = null,
-    val isp: String? = null
+    val isp: String? = null,
 )
 
 data class Decision(
     val blocked: Boolean,
     val reason: String? = null,
     val countryCode: String? = null,
-    val isp: String? = null
+    val isp: String? = null,
 )
 
 interface IpCheckService {
@@ -36,26 +36,29 @@ interface IpCheckService {
 @Service
 class DefaultIpCheckService(
     private val props: IpCheckProperties,
-    private val client: RestClient
+    private val client: RestClient,
 ) : IpCheckService {
-
     override fun check(ip: String): Decision {
-        val response: IpApiResponse? = try {
-            client.get()
-                .uri("/{ip}", ip)
-                .retrieve()
-                .body(IpApiResponse::class.java)
-        } catch (_: Exception) {
-            return Decision(true, "IP check failed")
-        }
+        val response: IpApiResponse? =
+            try {
+                client
+                    .get()
+                    .uri("/{ip}", ip)
+                    .retrieve()
+                    .body(IpApiResponse::class.java)
+            } catch (_: Exception) {
+                return Decision(true, "IP check failed")
+            }
 
         when {
             response == null -> {
                 return Decision(true, "IP check failed")
             }
+
             response.status != "success" -> {
                 return Decision(true, "IP check: ${response.message ?: "fail"}")
             }
+
             else -> {
                 val cc = response.countryCode?.uppercase()
                 if (cc != null && props.blockedCountries.contains(cc)) {

@@ -24,23 +24,23 @@ import kotlin.test.assertTrue
         "ipcheck.enabled=false",
         "spring.datasource.url=jdbc:h2:mem:ipcheck;DB_CLOSE_DELAY=-1",
         "spring.datasource.driver-class-name=org.h2.Driver",
-        "spring.jpa.hibernate.ddl-auto=create-drop"
-    ]
+        "spring.jpa.hibernate.ddl-auto=create-drop",
+    ],
 )
 class FileProcessorHttpTests(
     @param:Autowired private val rest: TestRestTemplate,
     @param:Autowired private val objectMapper: ObjectMapper,
-    @param:LocalServerPort private val port: Int
+    @param:LocalServerPort private val port: Int,
 ) {
     @Test
-    fun canProcessFile() {
+    fun `can process file`() {
         val response = postProcessFile("/EntryFile.txt")
 
         assertEquals(OK, response.statusCode)
         assertEquals(APPLICATION_JSON, response.headers.contentType)
         assertEquals(
             """attachment; filename="OutcomeFile.json"""",
-            response.headers.getFirst(CONTENT_DISPOSITION)
+            response.headers.getFirst(CONTENT_DISPOSITION),
         )
 
         val json = objectMapper.readTree(response.body)
@@ -49,7 +49,7 @@ class FileProcessorHttpTests(
     }
 
     @Test
-    fun canProcessBrokenFile() {
+    fun `can process broken file`() {
         val response = postProcessFile("/BrokenFile.txt")
 
         assertEquals(BAD_REQUEST, response.statusCode)
@@ -58,7 +58,7 @@ class FileProcessorHttpTests(
         val json = objectMapper.readTree(response.body)
         assertEquals(
             "One or more lines failed to parse",
-            json.get("detail").asText()
+            json.get("detail").asText(),
         )
         val errors = json.get("errors")
         assertEquals(3, errors.size())
@@ -68,7 +68,7 @@ class FileProcessorHttpTests(
     }
 
     @Test
-    fun canProcessInvalidFile() {
+    fun `can process invalid file`() {
         val response = postProcessFile("/InvalidFile.txt")
 
         assertEquals(BAD_REQUEST, response.statusCode)
@@ -77,7 +77,7 @@ class FileProcessorHttpTests(
         val json = objectMapper.readTree(response.body)
         assertEquals(
             "One or more fields are invalid",
-            json.get("detail").asText()
+            json.get("detail").asText(),
         )
         val violations = json.get("violations")
         assertEquals(4, violations.size())
@@ -93,6 +93,6 @@ class FileProcessorHttpTests(
         val headers = HttpHeaders().apply { contentType = TEXT_PLAIN }
         val entity = HttpEntity(text, headers)
 
-        return rest.postForEntity("http://localhost:${port}/files/process", entity, ByteArray::class.java)
+        return rest.postForEntity("http://localhost:$port/files/process", entity, ByteArray::class.java)
     }
 }

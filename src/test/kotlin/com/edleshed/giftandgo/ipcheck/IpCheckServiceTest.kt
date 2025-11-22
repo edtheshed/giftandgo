@@ -7,23 +7,23 @@ import org.mockito.Mockito.*
 import org.springframework.web.client.RestClient
 
 class IpCheckServiceTest {
-
     private val client: RestClient = mock()
     private val getSpec: RestClient.RequestHeadersUriSpec<*> = mock()
     private val responseSpec: RestClient.ResponseSpec = mock()
 
-    private val ipCheckProperties = IpCheckProperties(
-        baseUrl = "https://ip-api.com",
-        blockedCountries = setOf("UK", "USA"),
-        blockedIsps = setOf("gcp", "aws"),
-        timeoutMs = 1000,
-        enabled = true
-    )
+    private val ipCheckProperties =
+        IpCheckProperties(
+            baseUrl = "https://ip-api.com",
+            blockedCountries = setOf("UK", "USA"),
+            blockedIsps = setOf("gcp", "aws"),
+            timeoutMs = 1000,
+            enabled = true,
+        )
 
     private val ipCheckService = DefaultIpCheckService(ipCheckProperties, client)
 
     @Test
-    fun checkValidIp() {
+    fun `check valid ip and not block`() {
         val ip = "1.1.1.1"
         stubIpResponse(
             ip,
@@ -31,8 +31,8 @@ class IpCheckServiceTest {
                 status = "success",
                 message = null,
                 countryCode = "FR",
-                isp = "Orange"
-            )
+                isp = "Orange",
+            ),
         )
 
         val result = ipCheckService.check(ip)
@@ -42,14 +42,14 @@ class IpCheckServiceTest {
                 blocked = false,
                 reason = null,
                 countryCode = "FR",
-                isp = "Orange"
+                isp = "Orange",
             ),
-            result
+            result,
         )
     }
 
     @Test
-    fun checkIpFromBlockedCountry() {
+    fun `check ip from blocked country and block`() {
         val ip = "2.2.2.2"
         stubIpResponse(
             ip,
@@ -57,8 +57,8 @@ class IpCheckServiceTest {
                 status = "success",
                 message = null,
                 countryCode = "UK",
-                isp = "BT"
-            )
+                isp = "BT",
+            ),
         )
 
         val result = ipCheckService.check(ip)
@@ -68,14 +68,14 @@ class IpCheckServiceTest {
                 blocked = true,
                 reason = "Blocked country: UK",
                 countryCode = "UK",
-                isp = "BT"
+                isp = "BT",
             ),
-            result
+            result,
         )
     }
 
     @Test
-    fun checkIpFromBlockedISP() {
+    fun `check ip from blocked isp and block`() {
         val ip = "2.2.2.2"
         stubIpResponse(
             ip,
@@ -83,8 +83,8 @@ class IpCheckServiceTest {
                 status = "success",
                 message = null,
                 countryCode = "FR",
-                isp = "AWS"
-            )
+                isp = "AWS",
+            ),
         )
 
         val result = ipCheckService.check(ip)
@@ -94,18 +94,18 @@ class IpCheckServiceTest {
                 blocked = true,
                 reason = "Blocked ISP: AWS",
                 countryCode = "FR",
-                isp = "AWS"
+                isp = "AWS",
             ),
-            result
+            result,
         )
     }
 
     @Test
-    fun checkIpButApiGivesNull() {
+    fun `check ip but api gives null and block`() {
         val ip = "2.2.2.2"
         stubIpResponse(
             ip,
-            null
+            null,
         )
 
         val result = ipCheckService.check(ip)
@@ -115,12 +115,12 @@ class IpCheckServiceTest {
                 blocked = true,
                 reason = "IP check failed",
             ),
-            result
+            result,
         )
     }
 
     @Test
-    fun checkIpButRequestThrows() {
+    fun `check ip but request throws and block`() {
         val ip = "2.2.2.2"
         given(client.get()).willThrow(RuntimeException())
 
@@ -131,11 +131,14 @@ class IpCheckServiceTest {
                 blocked = true,
                 reason = "IP check failed",
             ),
-            result
+            result,
         )
     }
 
-    private fun stubIpResponse(ip: String, response: IpApiResponse?) {
+    private fun stubIpResponse(
+        ip: String,
+        response: IpApiResponse?,
+    ) {
         given(client.get()).willReturn(getSpec)
         given(getSpec.uri("/{ip}", ip)).willReturn(getSpec)
         given(getSpec.retrieve()).willReturn(responseSpec)

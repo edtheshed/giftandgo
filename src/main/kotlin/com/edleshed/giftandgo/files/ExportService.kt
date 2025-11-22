@@ -8,7 +8,9 @@ interface ExportService {
 }
 
 @Service
-class DefaultExportService(private val mapper: ObjectMapper) : ExportService {
+class DefaultExportService(
+    private val mapper: ObjectMapper,
+) : ExportService {
     override fun toPeopleJsonFile(people: List<Person>): ByteArray {
         val export = people.map { PersonResponse(it.name, it.transport.description, it.transport.topSpeed) }
         return mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(export)

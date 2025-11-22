@@ -14,19 +14,21 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/files")
 class FileProcessorController(
     private val fileProcessorService: FileProcessorService,
-    private val exportService: ExportService
+    private val exportService: ExportService,
 ) {
-
     @PostMapping(
         path = ["/process"],
         consumes = [TEXT_PLAIN_VALUE],
-        produces = [APPLICATION_JSON_VALUE]
+        produces = [APPLICATION_JSON_VALUE],
     )
-    fun processFile(@RequestBody body: String): ResponseEntity<ByteArray> {
+    fun processFile(
+        @RequestBody body: String,
+    ): ResponseEntity<ByteArray> {
         val people = fileProcessorService.process(body)
         val bytes = exportService.toPeopleJsonFile(people)
 
-        return ResponseEntity.ok()
+        return ResponseEntity
+            .ok()
             .contentType(APPLICATION_JSON)
             .header(CONTENT_DISPOSITION, """attachment; filename="OutcomeFile.json"""")
             .contentLength(bytes.size.toLong())

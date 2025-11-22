@@ -6,11 +6,10 @@ import org.springframework.web.client.RestClient
 
 @Configuration
 class IpCheckConfig {
-
     @Bean
     fun ipRestClient(
         builder: RestClient.Builder,
-        props: IpCheckProperties
+        props: IpCheckProperties,
     ): RestClient =
         builder
             .baseUrl(props.baseUrl)

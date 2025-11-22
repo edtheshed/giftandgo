@@ -13,7 +13,7 @@ interface FileProcessorService {
 @ConditionalOnProperty(prefix = "features", name = ["person-validation"], havingValue = "true", matchIfMissing = true)
 class ValidatingFileProcessorService(
     private val personParser: PersonParser,
-    private val validator: Validator
+    private val validator: Validator,
 ) : FileProcessorService {
     override fun process(text: String): List<Person> {
         val results = parsePeople(text, personParser)
@@ -30,15 +30,17 @@ class ValidatingFileProcessorService(
         val people: List<Person> = okPairs.map { it.second }
 
         val validationErrors =
-            okPairs.asSequence().flatMap { (line, person) ->
-                validator.validate(person).map { v ->
-                    ValidationError(
-                        line = line,
-                        field = v.propertyPath.toString(),
-                        message = v.message
-                    )
-                }
-            }.sortedWith(compareBy({ it.line }, { it.field }))
+            okPairs
+                .asSequence()
+                .flatMap { (line, person) ->
+                    validator.validate(person).map { v ->
+                        ValidationError(
+                            line = line,
+                            field = v.propertyPath.toString(),
+                            message = v.message,
+                        )
+                    }
+                }.sortedWith(compareBy({ it.line }, { it.field }))
                 .toList()
         if (validationErrors.isNotEmpty()) throw ValidationAggregateException(validationErrors)
 
@@ -49,7 +51,7 @@ class ValidatingFileProcessorService(
 @Service
 @ConditionalOnProperty(prefix = "features", name = ["person-validation"], havingValue = "false", matchIfMissing = false)
 class RelaxedFileProcessorService(
-    private val personParser: PersonParser
+    private val personParser: PersonParser,
 ) : FileProcessorService {
     override fun process(text: String): List<Person> {
         val results = parsePeople(text, personParser)
@@ -59,30 +61,49 @@ class RelaxedFileProcessorService(
     }
 }
 
-private fun parsePeople(text: String, personParser: PersonParser): List<ParseResult> =
-    text.lineSequence()
+private fun parsePeople(
+    text: String,
+    personParser: PersonParser,
+): List<ParseResult> =
+    text
+        .lineSequence()
         .withIndex()
         .mapNotNull { (index, raw) ->
             val line = raw.trim()
             if (line.isEmpty()) null else personParser.tryParse(line, index + 1)
-        }
-        .toList()
+        }.toList()
 
 private fun handleParsingErrors(results: List<ParseResult>) {
-    val parseErrors = results.filterIsInstance<ParseResult.Error>()
-        .sortedWith(compareBy({ it.line }, { it.message }))
+    val parseErrors =
+        results
+            .filterIsInstance<ParseResult.Error>()
+            .sortedWith(compareBy({ it.line }, { it.message }))
     if (parseErrors.isNotEmpty()) {
         throw ParseAggregateException(parseErrors.map { LineError(it.line, it.message) })
     }
 }
 
-data class LineError(val line: Int, val message: String)
-
-class ParseAggregateException(val errors: List<LineError>) : IllegalArgumentException(
-    errors.joinToString("\n") { "Line ${it.line}: ${it.message}" }
+data class LineError(
+    val line: Int,
+    val message: String,
 )
 
-data class ValidationError(val line: Int, val field: String, val message: String)
+class ParseAggregateException(
+    val errors: List<LineError>,
+) : IllegalArgumentException(
+        errors.joinToString("\n") { "Line ${it.line}: ${it.message}" },
+    )
 
-class ValidationAggregateException(val errors: List<ValidationError>) : IllegalArgumentException(
-    errors.joinToString("\n") { "Line ${it.line}: Field ${it.field}, ${it.message}" })
+data class ValidationError(
+    val line: Int,
+    val field: String,
+    val message: String,
+)
+
+class ValidationAggregateException(
+    val errors: List<ValidationError>,
+) : IllegalArgumentException(
+        errors.joinToString("\n") {
+            "Line ${it.line}: Field ${it.field}, ${it.message}"
+        },
+    )

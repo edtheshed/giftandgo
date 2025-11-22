@@ -5,16 +5,15 @@ import java.time.Instant
 
 @Service
 class RequestLogService(
-    private val repo: RequestLogRepository
+    private val repo: RequestLogRepository,
 ) {
-
     fun log(
         requestUri: String,
         responseCode: Int,
         ipAddress: String,
         countryCode: String?,
         ipProvider: String?,
-        timeLapsedMs: Long
+        timeLapsedMs: Long,
     ) {
         repo.save(
             RequestLog(
@@ -24,8 +23,8 @@ class RequestLogService(
                 ipAddress = ipAddress,
                 countryCode = countryCode,
                 ipProvider = ipProvider,
-                timeLapsedMs = timeLapsedMs
-            )
+                timeLapsedMs = timeLapsedMs,
+            ),
         )
     }
 }

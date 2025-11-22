@@ -22,7 +22,7 @@ data class ErrorResponse(
     val title: String,
     val status: Int,
     val detail: String,
-    val ip: String
+    val ip: String,
 )
 
 @Entity
@@ -36,7 +36,7 @@ open class RequestLog(
     val ipAddress: String,
     val countryCode: String?,
     val ipProvider: String?,
-    val timeLapsedMs: Long
+    val timeLapsedMs: Long,
 ) {
     protected constructor() : this(
         id = UUID.randomUUID(),
@@ -46,7 +46,7 @@ open class RequestLog(
         ipAddress = "",
         countryCode = null,
         ipProvider = null,
-        timeLapsedMs = 0L
+        timeLapsedMs = 0L,
     )
 }
 
@@ -57,13 +57,12 @@ interface RequestLogRepository : JpaRepository<RequestLog, UUID>
 class IpGateAndAuditFilter(
     private val ipCheckService: IpCheckService,
     private val logService: RequestLogService,
-    private val mapper: ObjectMapper
+    private val mapper: ObjectMapper,
 ) : OncePerRequestFilter() {
-
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
-        filterChain: FilterChain
+        filterChain: FilterChain,
     ) {
         val started = System.nanoTime()
         val ip = resolveClientIp(request)
@@ -91,10 +90,12 @@ class IpGateAndAuditFilter(
     }
 
     private fun resolveClientIp(req: HttpServletRequest): String {
-        val xff = req.getHeader("X-Forwarded-For")
-            ?.split(',')
-            ?.firstOrNull()
-            ?.trim()
+        val xff =
+            req
+                .getHeader("X-Forwarded-For")
+                ?.split(',')
+                ?.firstOrNull()
+                ?.trim()
         if (!xff.isNullOrBlank()) return xff
 
         val realIp = req.getHeader("X-Real-IP")?.trim()
@@ -103,20 +104,24 @@ class IpGateAndAuditFilter(
         return req.remoteAddr
     }
 
-    private fun respondForbidden(resp: HttpServletResponse, reason: String, ip: String) {
+    private fun respondForbidden(
+        resp: HttpServletResponse,
+        reason: String,
+        ip: String,
+    ) {
         resp.status = FORBIDDEN.value()
         resp.contentType = APPLICATION_JSON_VALUE
 
-        val error = ErrorResponse(
-            title = FORBIDDEN.name,
-            status = FORBIDDEN.value(),
-            detail = reason,
-            ip = ip
-        )
+        val error =
+            ErrorResponse(
+                title = FORBIDDEN.name,
+                status = FORBIDDEN.value(),
+                detail = reason,
+                ip = ip,
+            )
 
         resp.writer.write(mapper.writeValueAsString(error))
     }
-
 
     private fun logRequest(
         uri: String,
@@ -124,11 +129,12 @@ class IpGateAndAuditFilter(
         ip: String,
         cc: String?,
         isp: String?,
-        started: Long
+        started: Long,
     ) {
-        val elapsedMs = TimeUnit
-            .NANOSECONDS
-            .toMillis(System.nanoTime() - started)
+        val elapsedMs =
+            TimeUnit
+                .NANOSECONDS
+                .toMillis(System.nanoTime() - started)
 
         logService.log(
             requestUri = uri,
@@ -136,7 +142,7 @@ class IpGateAndAuditFilter(
             ipAddress = ip,
             countryCode = cc,
             ipProvider = isp,
-            timeLapsedMs = elapsedMs
+            timeLapsedMs = elapsedMs,
         )
     }
 }
